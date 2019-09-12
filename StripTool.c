@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <signal.h>
 
 #include "Strip.h"
 #include "StripMisc.h"
@@ -72,6 +73,19 @@ int StripTool_main (int argc, char *argv[])
   // prototype is no longer available in Exceed 12
     HCLXmInit();
 #endif
+
+  /* no zombies please */
+  struct sigaction sa;
+  memset(&sa, 0, sizeof(struct sigaction));
+  sa.sa_handler = SIG_DFL;
+  sa.sa_flags = SA_NOCLDWAIT;
+  int r = sigaction(SIGCHLD, &sa, 0);
+  if (0 > r) {
+    fprintf(stderr
+            , "sigaction(SIGCHLD, { sa_handler=SIG_DFL, sa_flags=SA_NOCLDWAIT }) fail, errno %d (%s)\n"
+            , errno
+            , strerror(errno));
+    exit(1); }
 
     /* create and initialize the Strip structure */
   if (!(strip = Strip_init (&argc, argv, tmpfile())))
